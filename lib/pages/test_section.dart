@@ -25,7 +25,6 @@ class _TestSectionState extends ConsumerState<TestSection> {
   final _questionController = TextEditingController();
   final _numberOfOptionsController = TextEditingController();
   final List<TextEditingController> _optionControllers = [];
-  final List<TextEditingController> _questionControllers = [];
 
   @override
   void dispose() {
@@ -207,9 +206,6 @@ class _TestSectionState extends ConsumerState<TestSection> {
                                         ref
                                             .read(createTestProvider.notifier)
                                             .setShowQuestionDescription(true);
-                                        _questionControllers.add(
-                                          _questionController,
-                                        );
                                       }
                                     },
                               icon: const Icon(
@@ -385,10 +381,6 @@ class _TestSectionState extends ConsumerState<TestSection> {
                                               builder: (context) =>
                                                   TestInfoPage(
                                                     testName: widget.testName,
-                                                    optionControllers:
-                                                        _optionControllers,
-                                                    questionControllers:
-                                                        _questionControllers,
                                                   ),
                                             ),
                                           );
