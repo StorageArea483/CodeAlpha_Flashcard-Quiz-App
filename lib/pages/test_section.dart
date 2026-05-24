@@ -51,16 +51,18 @@ class _TestSectionState extends ConsumerState<TestSection> {
     }
   }
 
-  Future<void> _saveQuestionToFirestore() async {
+  Future<bool> _saveQuestionToFirestore() async {
     try {
       // Set loading state to true
-      ref.read(createTestProvider.notifier).setLoadingState(true);
+      if (mounted) {
+        ref.read(createTestProvider.notifier).setLoadingState(true);
+      }
 
       // Get Firestore instance
       final firestore = FirebaseFirestore.instance;
 
       // Create a unique document ID
-      final docId = firestore.collection('quiz-info').doc().id;
+      final docId = firestore.collection('quizinfo').doc().id;
 
       // Prepare question data
       final questionData = {
@@ -73,21 +75,23 @@ class _TestSectionState extends ConsumerState<TestSection> {
       };
 
       // Save to Firestore
-      await firestore.collection('quiz-info').doc(docId).set(questionData);
+      await firestore.collection('quizinfo').doc(docId).set(questionData);
 
       if (mounted) {
         ref.read(createTestProvider.notifier).setLoadingState(false);
       }
+      return true;
     } catch (e) {
       if (mounted) {
         ref.read(createTestProvider.notifier).setLoadingState(false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Error saving data, please retry'),
+            content: Text('Error saving data, please retry:'),
             backgroundColor: AppColors.error,
           ),
         );
       }
+      return false;
     }
   }
 
@@ -351,7 +355,14 @@ class _TestSectionState extends ConsumerState<TestSection> {
                                 : () async {
                                     if (_formKey.currentState!.validate()) {
                                       // Save question to Firestore
-                                      await _saveQuestionToFirestore();
+                                      final success =
+                                          await _saveQuestionToFirestore();
+
+                                      // Only proceed if save was successful
+                                      if (!success) {
+                                        _resetForm();
+                                        return;
+                                      }
 
                                       // Check if this is the last question
                                       if (currentQuestionIndex ==
@@ -390,8 +401,8 @@ class _TestSectionState extends ConsumerState<TestSection> {
                                               .setShowQuestionIndex(
                                                 currentQuestionIndex + 1,
                                               );
+                                          _resetForm();
                                         }
-                                        _resetForm();
                                       }
                                     }
                                   },
