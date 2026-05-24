@@ -33,3 +33,8 @@ final testInfoProvider =
     StateNotifierProvider<TestInfoNotifier, CreateInfoState>((ref) {
       return TestInfoNotifier();
     });
+
+// Family provider to track each question's expanded state independently
+final questionExpandedProvider = StateProvider.family.autoDispose<bool, int>(
+  (ref, questionIndex) => false,
+);

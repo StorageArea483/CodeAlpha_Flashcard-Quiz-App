@@ -14,8 +14,6 @@ class TestInfoPage extends ConsumerStatefulWidget {
 }
 
 class _TestInfoPageState extends ConsumerState<TestInfoPage> {
-  final Set<int> _expandedQuestions = {};
-
   @override
   void initState() {
     super.initState();
@@ -26,6 +24,9 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
 
   Future<void> _fetchQuestionsFromFirestore() async {
     try {
+      if (mounted) {
+        ref.read(testInfoProvider.notifier).setLoading(true);
+      }
       final firestore = FirebaseFirestore.instance;
       final querySnapshot = await firestore
           .collection('quizinfo')
@@ -98,106 +99,120 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
                   itemCount: questions.length,
                   itemBuilder: (context, index) {
                     final question = questions[index];
-                    final isExpanded = _expandedQuestions.contains(index);
                     final options = question['options'] as List<String>;
 
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: Column(
-                        children: [
-                          ListTile(
-                            title: Text(
-                              question['question'] as String,
-                              style: AppText.base.copyWith(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit, size: 20),
-                                  color: AppColors.primaryDark,
-                                  onPressed: () {},
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, size: 20),
-                                  color: AppColors.error,
-                                  onPressed: () {},
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    isExpanded
-                                        ? Icons.expand_less
-                                        : Icons.expand_more,
-                                    size: 24,
-                                  ),
-                                  color: AppColors.primaryDark,
-                                  onPressed: () {
-                                    setState(() {
-                                      if (isExpanded) {
-                                        _expandedQuestions.remove(index);
-                                      } else {
-                                        _expandedQuestions.add(index);
-                                      }
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
+                    return Consumer(
+                      builder: (context, ref, child) {
+                        final isExpanded = ref.watch(
+                          questionExpandedProvider(index),
+                        );
+
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
                           ),
-                          if (isExpanded)
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Divider(),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Options:',
-                                    style: AppText.base.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
+                          child: Column(
+                            children: [
+                              ListTile(
+                                title: Text(
+                                  question['question'] as String,
+                                  style: AppText.base.copyWith(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                  const SizedBox(height: 8),
-                                  ...options.asMap().entries.map((entry) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 4),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '${entry.key + 1}. ',
-                                            style: AppText.base.copyWith(
-                                              fontSize: 13,
-                                              color: AppColors.textLight,
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              entry.value,
-                                              style: AppText.base.copyWith(
-                                                fontSize: 13,
-                                                color: AppColors.textLight,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, size: 20),
+                                      color: AppColors.primaryDark,
+                                      onPressed: () {},
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, size: 20),
+                                      color: AppColors.error,
+                                      onPressed: () {},
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        isExpanded
+                                            ? Icons.expand_less
+                                            : Icons.expand_more,
+                                        size: 24,
                                       ),
-                                    );
-                                  }),
-                                ],
+                                      color: AppColors.primaryDark,
+                                      onPressed: () {
+                                        ref
+                                                .read(
+                                                  questionExpandedProvider(
+                                                    index,
+                                                  ).notifier,
+                                                )
+                                                .state =
+                                            !isExpanded;
+                                      },
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                        ],
-                      ),
+                              if (isExpanded)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0,
+                                    vertical: 16.0,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Divider(),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Options:',
+                                        style: AppText.base.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ...options.asMap().entries.map((entry) {
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 4,
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                '${entry.key + 1}. ',
+                                                style: AppText.base.copyWith(
+                                                  fontSize: 13,
+                                                  color: AppColors.textLight,
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: Text(
+                                                  entry.value,
+                                                  style: AppText.base.copyWith(
+                                                    fontSize: 13,
+                                                    color: AppColors.textLight,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
                     );
                   },
                 );
