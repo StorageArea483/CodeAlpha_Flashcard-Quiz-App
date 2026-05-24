@@ -1,0 +1,39 @@
+name: flash_card_quiz
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  firebase_core: ^4.9.0
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.3.1
+  cloud_firestore: ^6.4.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/static/
+    - assets/images/
+    - assets/images/
+
+  fonts:
+    - family: Montserrat
+      fonts:
+        - asset: assets/static/Montserrat-Regular.ttf
+        - asset: assets/static/Montserrat-Italic.ttf
+          style: italic
+        - asset: assets/static/Montserrat-Bold.ttf
+          weight: 700
+        - asset: assets/static/Montserrat-BoldItalic.ttf
+          weight: 700
+          style: italic
