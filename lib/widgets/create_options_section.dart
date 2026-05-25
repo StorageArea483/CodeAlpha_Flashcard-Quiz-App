@@ -121,13 +121,6 @@ class _TestSectionState extends ConsumerState<CreateOptionsSection> {
               key: _formKey,
               child: Consumer(
                 builder: (context, ref, child) {
-                  if (!mounted) return const SizedBox.shrink();
-                  // use to target the current question that is being set
-                  final currentQuestionIndex = ref.watch(
-                    createTestProvider.select(
-                      (state) => state.currentQuestionIndex,
-                    ),
-                  );
                   // used to show the text field where user can set a question
                   if (!mounted) return const SizedBox.shrink();
                   final showQuestionDescription = ref.watch(
@@ -158,14 +151,24 @@ class _TestSectionState extends ConsumerState<CreateOptionsSection> {
                       const SizedBox(height: 24),
 
                       // Test Counter Title
-                      Center(
-                        child: Text(
-                          'Question: ${currentQuestionIndex + 1}/${widget.numberOfQuestions}',
-                          style: AppText.formTitle.copyWith(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                      Consumer(
+                        builder: (context, ref, child) {
+                          if (!mounted) return const SizedBox.shrink();
+                          final currentQuestionIndex = ref.watch(
+                            createTestProvider.select(
+                              (state) => state.currentQuestionIndex,
+                            ),
+                          );
+                          return Center(
+                            child: Text(
+                              'Question: ${currentQuestionIndex + 1}/${widget.numberOfQuestions}',
+                              style: AppText.formTitle.copyWith(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 40),
 
@@ -287,7 +290,8 @@ class _TestSectionState extends ConsumerState<CreateOptionsSection> {
                                           final number = int.tryParse(value);
                                           if (number != null &&
                                               number >= 2 &&
-                                              number <= 4) {
+                                              number <= 4 &&
+                                              mounted) {
                                             ref
                                                 .read(
                                                   createTestProvider.notifier,
@@ -350,79 +354,93 @@ class _TestSectionState extends ConsumerState<CreateOptionsSection> {
                         const SizedBox(height: 16),
 
                         // Save Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: AppSizes.primaryButtonHeight,
-                          child: ElevatedButton(
-                            onPressed: isLoading
-                                ? null
-                                : () async {
-                                    if (_formKey.currentState!.validate()) {
-                                      // Save question to Firestore
-                                      final success =
-                                          await _saveQuestionToFirestore();
+                        Consumer(
+                          builder: (context, ref, child) {
+                            if (!mounted) return const SizedBox();
+                            final currentQuestionIndex = ref
+                                .watch(createTestProvider)
+                                .currentQuestionIndex;
+                            return SizedBox(
+                              width: double.infinity,
+                              height: AppSizes.primaryButtonHeight,
+                              child: ElevatedButton(
+                                onPressed: isLoading
+                                    ? null
+                                    : () async {
+                                        if (_formKey.currentState!.validate()) {
+                                          // Save question to Firestore
+                                          final success =
+                                              await _saveQuestionToFirestore();
 
-                                      // Only proceed if save was successful
-                                      if (!success) {
-                                        _resetForm();
-                                        return;
-                                      }
+                                          // Only proceed if save was successful
+                                          if (!success) {
+                                            _resetForm();
+                                            return;
+                                          }
 
-                                      // Check if this is the last question
-                                      if (currentQuestionIndex ==
-                                          widget.numberOfQuestions - 1) {
-                                        // All questions completed
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'All questions created!',
-                                              ),
-                                              backgroundColor:
-                                                  AppColors.success,
-                                            ),
-                                          );
-                                          Navigator.of(context).pushReplacement(
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  TestInfoPage(
-                                                    testName: widget.testName,
+                                          // Check if this is the last question
+                                          if (currentQuestionIndex ==
+                                              widget.numberOfQuestions - 1) {
+                                            // All questions completed
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'All questions created!',
                                                   ),
-                                            ),
-                                          );
-                                        }
-                                      } else {
-                                        // Move to next question
-                                        if (mounted) {
-                                          ref
-                                              .read(createTestProvider.notifier)
-                                              .setShowQuestionIndex(
-                                                currentQuestionIndex + 1,
+                                                  backgroundColor:
+                                                      AppColors.success,
+                                                ),
                                               );
-                                          _resetForm();
+                                              Navigator.of(
+                                                context,
+                                              ).pushReplacement(
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      TestInfoPage(
+                                                        testName:
+                                                            widget.testName,
+                                                      ),
+                                                ),
+                                              );
+                                            }
+                                          } else {
+                                            // Move to next question
+                                            if (mounted) {
+                                              ref
+                                                  .read(
+                                                    createTestProvider.notifier,
+                                                  )
+                                                  .setShowQuestionIndex(
+                                                    currentQuestionIndex + 1,
+                                                  );
+                                              _resetForm();
+                                            }
+                                          }
                                         }
-                                      }
-                                    }
-                                  },
-                            style: AppButtons.primary,
-                            child: isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        AppColors.buttonForeground,
+                                      },
+                                style: AppButtons.primary,
+                                child: isLoading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                AppColors.buttonForeground,
+                                              ),
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Save Question',
+                                        style: AppText.submitButton,
                                       ),
-                                    ),
-                                  )
-                                : const Text(
-                                    'Save Question',
-                                    style: AppText.submitButton,
-                                  ),
-                          ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                       const SizedBox(height: 24),

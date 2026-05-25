@@ -74,6 +74,7 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
 
   Future<void> _deleteQuestion(String documentId) async {
     try {
+      if (!mounted) return;
       ref.read(testInfoProvider.notifier).setLoading(true);
 
       final firestore = FirebaseFirestore.instance;
@@ -95,6 +96,7 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
 
   Future<void> _updateQuestion(String documentId) async {
     try {
+      if (!mounted) return;
       ref.read(testInfoProvider.notifier).setLoading(true);
 
       final firestore = FirebaseFirestore.instance;
@@ -297,14 +299,11 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
                 Consumer(
                   builder: (context, ref, child) {
                     if (!mounted) return const SizedBox.shrink();
-                    final isLoading = ref.watch(
-                      testInfoProvider.select((v) => v.isLoading),
-                    );
                     final questions = ref.watch(
                       testInfoProvider.select((v) => v.questions),
                     );
                     return Expanded(
-                      child: questions.isEmpty && !isLoading
+                      child: questions.isEmpty
                           ? Center(
                               child: Column(
                                 children: [
@@ -540,10 +539,10 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
             // Loading overlay
             Consumer(
               builder: (context, ref, child) {
+                if (!mounted) return const SizedBox.shrink();
                 final isLoading = ref.watch(
                   testInfoProvider.select((v) => v.isLoading),
                 );
-
                 if (!isLoading) return const SizedBox.shrink();
 
                 return Container(
