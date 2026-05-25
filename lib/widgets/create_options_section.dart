@@ -6,21 +6,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../styles/styles.dart';
 
-class TestSection extends ConsumerStatefulWidget {
+class CreateOptionsSection extends ConsumerStatefulWidget {
   final String testName;
-  final int numberOfTests;
+  final int numberOfQuestions;
 
-  const TestSection({
+  const CreateOptionsSection({
     super.key,
     required this.testName,
-    required this.numberOfTests,
+    required this.numberOfQuestions,
   });
 
   @override
-  ConsumerState<TestSection> createState() => _TestSectionState();
+  ConsumerState<CreateOptionsSection> createState() => _TestSectionState();
 }
 
-class _TestSectionState extends ConsumerState<TestSection> {
+class _TestSectionState extends ConsumerState<CreateOptionsSection> {
   final _formKey = GlobalKey<FormState>();
   final _questionController = TextEditingController();
   final _numberOfOptionsController = TextEditingController();
@@ -63,8 +63,16 @@ class _TestSectionState extends ConsumerState<TestSection> {
       // Create a unique document ID
       final docId = firestore.collection('quizinfo').doc().id;
 
+      if (_optionControllers.isEmpty) {
+        throw Exception('No options provided');
+      } else if (_optionControllers.length < 2) {
+        throw Exception('Minimum 2 options required');
+      } else if (_optionControllers.length > 4) {
+        throw Exception('Maximum 4 options allowed');
+      }
       // Prepare question data
       final questionData = {
+        'id': docId,
         'testName': widget.testName,
         'question': _questionController.text.trim(),
         'numberOfOptions': _optionControllers.length,
@@ -84,8 +92,8 @@ class _TestSectionState extends ConsumerState<TestSection> {
       if (mounted) {
         ref.read(createTestProvider.notifier).setLoadingState(false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error saving data, please retry:'),
+          SnackBar(
+            content: Text(e.toString()),
             backgroundColor: AppColors.error,
           ),
         );
@@ -152,7 +160,7 @@ class _TestSectionState extends ConsumerState<TestSection> {
                       // Test Counter Title
                       Center(
                         child: Text(
-                          'Question: ${currentQuestionIndex + 1}/${widget.numberOfTests}',
+                          'Question: ${currentQuestionIndex + 1}/${widget.numberOfQuestions}',
                           style: AppText.formTitle.copyWith(
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
@@ -362,7 +370,7 @@ class _TestSectionState extends ConsumerState<TestSection> {
 
                                       // Check if this is the last question
                                       if (currentQuestionIndex ==
-                                          widget.numberOfTests - 1) {
+                                          widget.numberOfQuestions - 1) {
                                         // All questions completed
                                         if (mounted) {
                                           ScaffoldMessenger.of(

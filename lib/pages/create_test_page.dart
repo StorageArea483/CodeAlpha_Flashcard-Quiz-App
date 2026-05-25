@@ -1,5 +1,5 @@
 import 'package:flash_card_quiz/pages/role_select_page.dart';
-import 'package:flash_card_quiz/pages/test_section.dart';
+import 'package:flash_card_quiz/widgets/create_options_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../styles/styles.dart';
@@ -76,18 +76,18 @@ class _CreateTestPageState extends State<CreateTestPage> {
                   const SizedBox(height: 24),
 
                   // Number of Tests Field
-                  const Text('Tests Number', style: AppText.fieldLabel),
+                  const Text('Questions Number', style: AppText.fieldLabel),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _numberOfTestsController,
                     decoration: AppTextFields.textFieldDecoration(
-                      'Enter number of tests',
+                      'Enter number of questions',
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Please enter number of tests';
+                        return 'Please enter number of questions';
                       }
                       final number = int.tryParse(value);
                       if (number == null || number <= 0) {
@@ -107,15 +107,15 @@ class _CreateTestPageState extends State<CreateTestPage> {
                         if (_formKey.currentState!.validate()) {
                           // Handle proceed action
                           final testName = _testNameController.text.trim();
-                          final numberOfTests = int.parse(
+                          final numberOfQuestions = int.parse(
                             _numberOfTestsController.text,
                           );
                           if (mounted) {
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
-                                builder: (context) => TestSection(
+                                builder: (context) => CreateOptionsSection(
                                   testName: testName,
-                                  numberOfTests: numberOfTests,
+                                  numberOfQuestions: numberOfQuestions,
                                 ),
                               ),
                             );
