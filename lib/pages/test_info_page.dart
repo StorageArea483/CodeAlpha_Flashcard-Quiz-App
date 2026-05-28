@@ -19,6 +19,8 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
   final _editQuestionController = TextEditingController();
   final List<TextEditingController> _editOptionControllers = [];
   final _editCorrectOptionController = TextEditingController();
+  final _editStartTimeController = TextEditingController();
+  final _editEndTimeController = TextEditingController();
 
   @override
   void initState() {
@@ -32,6 +34,8 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
   void dispose() {
     _editQuestionController.dispose();
     _editCorrectOptionController.dispose();
+    _editStartTimeController.dispose();
+    _editEndTimeController.dispose();
     for (var controller in _editOptionControllers) {
       controller.dispose();
     }
@@ -78,98 +82,6 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
     }
   }
 
-  Future<void> _selectTime() async {
-    if (!mounted) return;
-    final currentTime = ref.read(testInfoProvider).editSelectedTime;
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: currentTime,
-      initialEntryMode: TimePickerEntryMode.input,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primaryDark,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppColors.primaryDark,
-              secondary: AppColors.primaryDark,
-              onSecondary: Colors.white,
-            ),
-            timePickerTheme: const TimePickerThemeData(
-              backgroundColor: Colors.white,
-              hourMinuteTextColor: AppColors.primaryDark,
-              hourMinuteColor: AppColors.background,
-              dayPeriodTextColor: AppColors.primaryDark,
-              dayPeriodColor: AppColors.background,
-              dayPeriodBorderSide: BorderSide(color: AppColors.primaryDark),
-              dialHandColor: AppColors.primaryDark,
-              dialBackgroundColor: AppColors.background,
-              dialTextColor: AppColors.primaryDark,
-              entryModeIconColor: AppColors.primaryDark,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primaryDark,
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null && mounted) {
-      ref.read(testInfoProvider.notifier).setSelectedTime(picked);
-    }
-  }
-
-  Future<void> _selectEndTime() async {
-    if (!mounted) return;
-    final currentEndTime = ref.read(testInfoProvider).editSelectedEndTime;
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: currentEndTime,
-      initialEntryMode: TimePickerEntryMode.input,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primaryDark,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppColors.primaryDark,
-              secondary: AppColors.primaryDark,
-              onSecondary: Colors.white,
-            ),
-            timePickerTheme: const TimePickerThemeData(
-              backgroundColor: Colors.white,
-              hourMinuteTextColor: AppColors.primaryDark,
-              hourMinuteColor: AppColors.background,
-              dayPeriodTextColor: AppColors.primaryDark,
-              dayPeriodColor: AppColors.background,
-              dayPeriodBorderSide: BorderSide(color: AppColors.primaryDark),
-              dialHandColor: AppColors.primaryDark,
-              dialBackgroundColor: AppColors.background,
-              dialTextColor: AppColors.primaryDark,
-              entryModeIconColor: AppColors.primaryDark,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primaryDark,
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null && mounted) {
-      ref.read(testInfoProvider.notifier).setSelectedEndTime(picked);
-    }
-  }
-
   Future<void> _deleteQuestion(String documentId) async {
     try {
       if (!mounted) return;
@@ -207,17 +119,10 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
         throw Exception('Maximum 4 options allowed');
       }
 
-      if (!mounted) return;
-      final editSelectedTime = ref.read(testInfoProvider).editSelectedTime;
-      if (!mounted) return;
-      final editSelectedEndTime = ref
-          .read(testInfoProvider)
-          .editSelectedEndTime;
-
       // Prepare updated data
       final updatedData = {
-        'selectedTime': editSelectedTime.format(context),
-        'selectedEndTime': editSelectedEndTime.format(context),
+        'selectedTime': _editStartTimeController.text.trim(),
+        'selectedEndTime': _editEndTimeController.text.trim(),
         'question': _editQuestionController.text.trim(),
         'options': _editOptionControllers
             .map((controller) => controller.text.trim())
@@ -260,6 +165,10 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
     // Pre-fill correct option
     _editCorrectOptionController.text = question['correctOption'] as String;
 
+    // Pre-fill start and end times
+    _editStartTimeController.text = question['selectedTime'] as String;
+    _editEndTimeController.text = question['selectedEndTime'] as String;
+
     // Pre-fill options
     final options = question['options'] as List<String>;
     for (var option in options) {
@@ -273,7 +182,7 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (bottomSheetContext) => Container(
+      builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.8,
         decoration: const BoxDecoration(
           color: AppColors.background,
@@ -373,105 +282,57 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
                     const SizedBox(height: 10),
 
                     // Start Time Field
-                    const Text('Start Time', style: AppText.fieldLabel),
+                    const Text('Start Time (HH:mm)', style: AppText.fieldLabel),
                     const SizedBox(height: 8),
-                    Consumer(
-                      builder: (context, ref, child) {
-                        if (!mounted) return const SizedBox.shrink();
-                        final editSelectedTime = ref.watch(
-                          testInfoProvider.select((v) => v.editSelectedTime),
+                    TextFormField(
+                      controller: _editStartTimeController,
+                      decoration: AppTextFields.textFieldDecoration(
+                        'Enter start time (e.g., 09:00)',
+                      ),
+                      keyboardType: TextInputType.datetime,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter start time';
+                        }
+                        // Validate HH:mm format
+                        final timeRegex = RegExp(
+                          r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$',
                         );
-                        return InkWell(
-                          onTap: _selectTime,
-                          borderRadius: BorderRadius.circular(
-                            AppDecorations.primaryButtonRadius,
-                          ),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 16,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceLight,
-                              borderRadius: BorderRadius.circular(
-                                AppDecorations.primaryButtonRadius,
-                              ),
-                              border: Border.all(
-                                color: AppColors.primaryDark.withOpacity(0.2),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  editSelectedTime.format(context),
-                                  style: AppText.base.copyWith(
-                                    fontSize: 15,
-                                    color: AppColors.buttonBackground,
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.access_time,
-                                  color: AppColors.primaryDark,
-                                  size: 24,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
+                        if (!timeRegex.hasMatch(value.trim())) {
+                          return 'Invalid format. (e.g., 09:00 or 14:30)';
+                        }
+                        return null;
                       },
                     ),
                     const SizedBox(height: 10),
 
                     // End Time Field
-                    const Text('End Time', style: AppText.fieldLabel),
+                    const Text('End Time (HH:mm)', style: AppText.fieldLabel),
                     const SizedBox(height: 8),
-                    Consumer(
-                      builder: (context, ref, child) {
-                        if (!mounted) return const SizedBox.shrink();
-                        final editSelectedEndTime = ref.watch(
-                          testInfoProvider.select((v) => v.editSelectedEndTime),
+                    TextFormField(
+                      controller: _editEndTimeController,
+                      decoration: AppTextFields.textFieldDecoration(
+                        'Enter end time (e.g., 17:00)',
+                      ),
+                      keyboardType: TextInputType.datetime,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter end time';
+                        }
+                        // Validate HH:mm format
+                        final timeRegex = RegExp(
+                          r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$',
                         );
-                        return InkWell(
-                          onTap: _selectEndTime,
-                          borderRadius: BorderRadius.circular(
-                            AppDecorations.primaryButtonRadius,
-                          ),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 16,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceLight,
-                              borderRadius: BorderRadius.circular(
-                                AppDecorations.primaryButtonRadius,
-                              ),
-                              border: Border.all(
-                                color: AppColors.primaryDark.withOpacity(0.2),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  editSelectedEndTime.format(context),
-                                  style: AppText.base.copyWith(
-                                    fontSize: 15,
-                                    color: AppColors.buttonBackground,
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.access_time,
-                                  color: AppColors.primaryDark,
-                                  size: 24,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
+                        if (!timeRegex.hasMatch(value.trim())) {
+                          return 'Invalid format. (e.g., 09:00 or 14:30)';
+                        }
+
+                        // Check if start time and end time are the same
+                        if (_editStartTimeController.text.trim() ==
+                            value.trim()) {
+                          return 'End time must be different from start time';
+                        }
+                        return null;
                       },
                     ),
                     const SizedBox(height: 10),
@@ -483,28 +344,23 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
                       child: ElevatedButton(
                         onPressed: () {
                           if (_editFormKey.currentState!.validate()) {
-                            // Validate that end time is greater than start time
-                            final editSelectedTime = ref
-                                .read(testInfoProvider)
-                                .editSelectedTime;
-                            final editSelectedEndTime = ref
-                                .read(testInfoProvider)
-                                .editSelectedEndTime;
+                            // Parse times and validate end time is greater than start time
+                            final startTime = _editStartTimeController.text
+                                .trim();
+                            final endTime = _editEndTimeController.text.trim();
+
+                            final startParts = startTime.split(':');
+                            final endParts = endTime.split(':');
 
                             final startMinutes =
-                                editSelectedTime.hour * 60 +
-                                editSelectedTime.minute;
+                                int.parse(startParts[0]) * 60 +
+                                int.parse(startParts[1]);
                             final endMinutes =
-                                editSelectedEndTime.hour * 60 +
-                                editSelectedEndTime.minute;
+                                int.parse(endParts[0]) * 60 +
+                                int.parse(endParts[1]);
 
                             if (endMinutes <= startMinutes) {
-                              ScaffoldMessenger.of(
-                                Navigator.of(
-                                  context,
-                                  rootNavigator: true,
-                                ).context,
-                              ).showSnackBar(
+                              ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
                                     'End time must be greater than start time',
@@ -516,7 +372,7 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
                             }
 
                             _updateQuestion(documentId);
-                            Navigator.pop(bottomSheetContext);
+                            Navigator.pop(context);
                           }
                         },
                         style: AppButtons.primary,

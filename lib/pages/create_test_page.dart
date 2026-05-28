@@ -1,5 +1,4 @@
 import 'package:flash_card_quiz/pages/role_select_page.dart';
-import 'package:flash_card_quiz/providers/create_test_provider.dart';
 import 'package:flash_card_quiz/widgets/create_options_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,100 +16,16 @@ class _CreateTestPageState extends ConsumerState<CreateTestPage> {
   final _formKey = GlobalKey<FormState>();
   final _testNameController = TextEditingController();
   final _numberOfTestsController = TextEditingController();
+  final _startTimeController = TextEditingController();
+  final _endTimeController = TextEditingController();
 
   @override
   void dispose() {
     _testNameController.dispose();
     _numberOfTestsController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
     super.dispose();
-  }
-
-  Future<void> _selectTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-      initialEntryMode: TimePickerEntryMode.input,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primaryDark,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppColors.primaryDark,
-              secondary: AppColors.primaryDark,
-              onSecondary: Colors.white,
-            ),
-            timePickerTheme: const TimePickerThemeData(
-              backgroundColor: Colors.white,
-              hourMinuteTextColor: AppColors.primaryDark,
-              hourMinuteColor: AppColors.background,
-              dayPeriodTextColor: AppColors.primaryDark,
-              dayPeriodColor: AppColors.background,
-              dayPeriodBorderSide: BorderSide(color: AppColors.primaryDark),
-              dialHandColor: AppColors.primaryDark,
-              dialBackgroundColor: AppColors.background,
-              dialTextColor: AppColors.primaryDark,
-              entryModeIconColor: AppColors.primaryDark,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primaryDark,
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null && mounted) {
-      ref.read(createTestProvider.notifier).state = picked;
-    }
-  }
-
-  Future<void> _selectEndTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-      initialEntryMode: TimePickerEntryMode.input,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primaryDark,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppColors.primaryDark,
-              secondary: AppColors.primaryDark,
-              onSecondary: Colors.white,
-            ),
-            timePickerTheme: const TimePickerThemeData(
-              backgroundColor: Colors.white,
-              hourMinuteTextColor: AppColors.primaryDark,
-              hourMinuteColor: AppColors.background,
-              dayPeriodTextColor: AppColors.primaryDark,
-              dayPeriodColor: AppColors.background,
-              dayPeriodBorderSide: BorderSide(color: AppColors.primaryDark),
-              dialHandColor: AppColors.primaryDark,
-              dialBackgroundColor: AppColors.background,
-              dialTextColor: AppColors.primaryDark,
-              entryModeIconColor: AppColors.primaryDark,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primaryDark,
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null && mounted) {
-      ref.read(endTestProvider.notifier).state = picked;
-    }
   }
 
   @override
@@ -188,56 +103,27 @@ class _CreateTestPageState extends ConsumerState<CreateTestPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Test Time Field
+                  // Start Time Field
                   const Text('Start Time', style: AppText.fieldLabel),
                   const SizedBox(height: 8),
-                  Consumer(
-                    builder: (context, ref, child) {
-                      if (!mounted) return const SizedBox.shrink();
-                      final selectedTime = ref.watch(createTestProvider);
-                      return InkWell(
-                        onTap: _selectTime,
-                        borderRadius: BorderRadius.circular(
-                          AppDecorations.primaryButtonRadius,
-                        ),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceLight,
-                            borderRadius: BorderRadius.circular(
-                              AppDecorations.primaryButtonRadius,
-                            ),
-                            border: Border.all(
-                              color: AppColors.primaryDark.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                selectedTime != null
-                                    ? selectedTime.format(context)
-                                    : 'Select test time',
-                                style: AppText.base.copyWith(
-                                  fontSize: 15,
-                                  color: selectedTime != null
-                                      ? AppColors.buttonBackground
-                                      : AppColors.textLight,
-                                ),
-                              ),
-                              const Icon(
-                                Icons.access_time,
-                                color: AppColors.primaryDark,
-                                size: 24,
-                              ),
-                            ],
-                          ),
-                        ),
+                  TextFormField(
+                    controller: _startTimeController,
+                    decoration: AppTextFields.textFieldDecoration(
+                      'Enter start time (e.g., 09:00)',
+                    ),
+                    keyboardType: TextInputType.datetime,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter start time';
+                      }
+                      // Validate HH:mm format
+                      final timeRegex = RegExp(
+                        r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$',
                       );
+                      if (!timeRegex.hasMatch(value.trim())) {
+                        return 'Invalid format. (e.g., 09:00 or 14:30)';
+                      }
+                      return null;
                     },
                   ),
                   const SizedBox(height: 24),
@@ -245,53 +131,29 @@ class _CreateTestPageState extends ConsumerState<CreateTestPage> {
                   // End Time Field
                   const Text('End Time', style: AppText.fieldLabel),
                   const SizedBox(height: 8),
-                  Consumer(
-                    builder: (context, ref, child) {
-                      if (!mounted) return const SizedBox.shrink();
-                      final selectedEndTime = ref.watch(endTestProvider);
-                      return InkWell(
-                        onTap: _selectEndTime,
-                        borderRadius: BorderRadius.circular(
-                          AppDecorations.primaryButtonRadius,
-                        ),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceLight,
-                            borderRadius: BorderRadius.circular(
-                              AppDecorations.primaryButtonRadius,
-                            ),
-                            border: Border.all(
-                              color: AppColors.primaryDark.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                selectedEndTime != null
-                                    ? selectedEndTime.format(context)
-                                    : 'Select test end time',
-                                style: AppText.base.copyWith(
-                                  fontSize: 15,
-                                  color: selectedEndTime != null
-                                      ? AppColors.buttonBackground
-                                      : AppColors.textLight,
-                                ),
-                              ),
-                              const Icon(
-                                Icons.access_time,
-                                color: AppColors.primaryDark,
-                                size: 24,
-                              ),
-                            ],
-                          ),
-                        ),
+                  TextFormField(
+                    controller: _endTimeController,
+                    decoration: AppTextFields.textFieldDecoration(
+                      'Enter end time (e.g., 17:00)',
+                    ),
+                    keyboardType: TextInputType.datetime,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter end time';
+                      }
+                      // Validate HH:mm format
+                      final timeRegex = RegExp(
+                        r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$',
                       );
+                      if (!timeRegex.hasMatch(value.trim())) {
+                        return 'Invalid format. (e.g., 09:00 or 14:30)';
+                      }
+
+                      // Check if start time and end time are the same
+                      if (_startTimeController.text.trim() == value.trim()) {
+                        return 'End time must be different from start time';
+                      }
+                      return null;
                     },
                   ),
                   const SizedBox(height: 40),
@@ -303,37 +165,24 @@ class _CreateTestPageState extends ConsumerState<CreateTestPage> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
-                          if (!mounted) return;
-                          final selectedTime = ref.read(createTestProvider);
-                          if (!mounted) return;
-                          final selectedEndTime = ref.read(endTestProvider);
-                          if (selectedTime == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Please select a test start time',
-                                ),
-                                backgroundColor: AppColors.error,
-                              ),
-                            );
-                            return;
-                          }
-                          if (selectedEndTime == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please select a test end time'),
-                                backgroundColor: AppColors.error,
-                              ),
-                            );
-                            return;
-                          }
+                          // Handle proceed action
+                          final testName = _testNameController.text.trim();
+                          final numberOfQuestions = int.parse(
+                            _numberOfTestsController.text,
+                          );
+                          final startTime = _startTimeController.text.trim();
+                          final endTime = _endTimeController.text.trim();
 
-                          // Validate that end time is greater than start time
+                          // Parse times and validate end time is greater than start time
+                          final startParts = startTime.split(':');
+                          final endParts = endTime.split(':');
+
                           final startMinutes =
-                              selectedTime.hour * 60 + selectedTime.minute;
+                              int.parse(startParts[0]) * 60 +
+                              int.parse(startParts[1]);
                           final endMinutes =
-                              selectedEndTime.hour * 60 +
-                              selectedEndTime.minute;
+                              int.parse(endParts[0]) * 60 +
+                              int.parse(endParts[1]);
 
                           if (endMinutes <= startMinutes) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -347,19 +196,14 @@ class _CreateTestPageState extends ConsumerState<CreateTestPage> {
                             return;
                           }
 
-                          // Handle proceed action
-                          final testName = _testNameController.text.trim();
-                          final numberOfQuestions = int.parse(
-                            _numberOfTestsController.text,
-                          );
                           if (mounted) {
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
                                 builder: (context) => CreateOptionsSection(
                                   testName: testName,
                                   numberOfQuestions: numberOfQuestions,
-                                  selectedTime: selectedTime,
-                                  selectedEndTime: selectedEndTime,
+                                  selectedTime: startTime,
+                                  selectedEndTime: endTime,
                                 ),
                               ),
                             );

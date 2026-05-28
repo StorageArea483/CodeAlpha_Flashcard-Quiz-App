@@ -10,8 +10,8 @@ import '../styles/styles.dart';
 class CreateOptionsSection extends ConsumerStatefulWidget {
   final String testName;
   final int numberOfQuestions;
-  final TimeOfDay selectedTime;
-  final TimeOfDay selectedEndTime;
+  final String selectedTime;
+  final String selectedEndTime;
 
   const CreateOptionsSection({
     super.key,
@@ -82,8 +82,8 @@ class _TestSectionState extends ConsumerState<CreateOptionsSection> {
       final questionData = {
         'id': docId,
         'testName': widget.testName,
-        'selectedTime': widget.selectedTime.format(context),
-        'selectedEndTime': widget.selectedEndTime.format(context),
+        'selectedTime': widget.selectedTime,
+        'selectedEndTime': widget.selectedEndTime,
         'question': _questionController.text.trim(),
         'options': _optionControllers
             .map((controller) => controller.text.trim())
