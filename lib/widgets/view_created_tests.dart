@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flash_card_quiz/pages/role_select_page.dart';
 import 'package:flash_card_quiz/pages/test_info_page.dart';
 import 'package:flash_card_quiz/providers/role_select_provider.dart';
 import 'package:flutter/material.dart';
@@ -65,108 +66,129 @@ class _ViewCreatedTestsState extends ConsumerState<ViewCreatedTests> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.surfaceLight,
         elevation: 0,
         title: const Text('Created Tests', style: AppText.appHeader),
         centerTitle: true,
-        iconTheme: const IconThemeData(color: AppColors.primaryDark),
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const RoleSelectPage()),
+          ),
+          icon: const Icon(Icons.arrow_back),
+        ),
       ),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Stack(
           children: [
-            Consumer(
-              builder: (context, ref, child) {
-                if (!mounted) return const SizedBox.shrink();
-                final names = ref.watch(testNames);
-                return names.isNotEmpty
-                    ? ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: names.length,
-                        itemBuilder: (context, index) {
-                          final testName = names[index];
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: SimpleDecoration.card(),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
-                              ),
-                              title: Text(
-                                testName,
-                                style: AppText.base.copyWith(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              trailing: const Icon(
-                                Icons.arrow_forward_ios,
-                                color: AppColors.primaryDark,
-                                size: 20,
-                              ),
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        TestInfoPage(testName: testName),
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  // App Logo
+                  const SizedBox(height: 40),
+                  Image.asset(
+                    'assets/images/app-logo.png',
+                    width: 100,
+                    height: 100,
+                  ),
+                  // App Name
+                  const SizedBox(height: 10),
+                  Text(
+                    'FlashCard Quiz',
+                    style: AppText.welcomeTitle.copyWith(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Tests List
+                  Consumer(
+                    builder: (context, ref, child) {
+                      if (!mounted) return const SizedBox.shrink();
+                      final names = ref.watch(testNames);
+                      return names.isNotEmpty
+                          ? ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(16),
+                              itemCount: names.length,
+                              itemBuilder: (context, index) {
+                                final testName = names[index];
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  decoration: SimpleDecoration.card(),
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
+                                    title: Text(
+                                      testName,
+                                      style: AppText.base.copyWith(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    trailing: const Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: AppColors.primaryDark,
+                                      size: 20,
+                                    ),
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              TestInfoPage(testName: testName),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 );
                               },
-                            ),
-                          );
-                        },
-                      )
-                    : Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.quiz_outlined,
-                              size: 64,
-                              color: AppColors.textLight,
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              'No tests created yet',
-                              style: AppText.base.copyWith(
-                                color: AppColors.textLight,
-                                fontSize: 16,
+                            )
+                          : Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 100,
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-              },
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.quiz_outlined,
+                                      size: 64,
+                                      color: AppColors.textLight,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Text(
+                                      'No tests created yet',
+                                      style: AppText.base.copyWith(
+                                        color: AppColors.textLight,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                    },
+                  ),
+                ],
+              ),
             ),
-            // Loading indicator at the bottom
+            // Loading indicator at the center
             Consumer(
               builder: (context, ref, child) {
                 if (!mounted) return const SizedBox.shrink();
                 final loading = ref.watch(isLoading);
                 if (!loading) return const SizedBox.shrink();
-                return Positioned(
-                  bottom: 20,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const CircularProgressIndicator(
-                        color: AppColors.buttonBackground,
-                      ),
+                return Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.buttonBackground,
                     ),
                   ),
                 );

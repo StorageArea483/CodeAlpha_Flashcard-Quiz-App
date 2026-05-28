@@ -147,10 +147,9 @@ class _RoleSelectPageState extends ConsumerState<RoleSelectPage> {
                     Consumer(
                       builder: (context, ref, child) {
                         if (!mounted) return const SizedBox();
-                        final isEmpty = ref.watch(isNotEmpty);
-                        return isEmpty
-                            ? const SizedBox()
-                            : Column(
+                        final hasTests = ref.watch(isNotEmpty);
+                        return hasTests
+                            ? Column(
                                 children: [
                                   const SizedBox(height: 10),
                                   SizedBox(
@@ -182,7 +181,8 @@ class _RoleSelectPageState extends ConsumerState<RoleSelectPage> {
                                     ),
                                   ),
                                 ],
-                              );
+                              )
+                            : const SizedBox();
                       },
                     ),
                     const SizedBox(height: 24),
@@ -191,33 +191,17 @@ class _RoleSelectPageState extends ConsumerState<RoleSelectPage> {
               ),
             ),
 
-            // Loading indicator at the bottom
+            // Loading indicator at the center
             Consumer(
               builder: (context, ref, child) {
                 if (!mounted) return const SizedBox();
                 final loading = ref.watch(isLoading);
                 if (!loading) return const SizedBox();
-                return Positioned(
-                  bottom: 20,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const CircularProgressIndicator(
-                        color: AppColors.buttonBackground,
-                      ),
+                return Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.buttonBackground,
                     ),
                   ),
                 );

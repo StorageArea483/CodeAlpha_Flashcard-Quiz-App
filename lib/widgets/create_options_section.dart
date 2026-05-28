@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flash_card_quiz/pages/create_test_page.dart';
 import 'package:flash_card_quiz/pages/test_info_page.dart';
 import 'package:flash_card_quiz/providers/test_section_provider.dart';
 import 'package:flutter/material.dart';
@@ -9,11 +10,13 @@ import '../styles/styles.dart';
 class CreateOptionsSection extends ConsumerStatefulWidget {
   final String testName;
   final int numberOfQuestions;
+  final TimeOfDay selectedTime;
 
   const CreateOptionsSection({
     super.key,
     required this.testName,
     required this.numberOfQuestions,
+    required this.selectedTime,
   });
 
   @override
@@ -74,11 +77,12 @@ class _TestSectionState extends ConsumerState<CreateOptionsSection> {
       final questionData = {
         'id': docId,
         'testName': widget.testName,
+        'selectedTime': widget.selectedTime.format(context),
         'question': _questionController.text.trim(),
-        'numberOfOptions': _optionControllers.length,
         'options': _optionControllers
             .map((controller) => controller.text.trim())
             .toList(),
+        'numberOfOptions': _optionControllers.length,
       };
 
       // Save to Firestore
@@ -111,7 +115,12 @@ class _TestSectionState extends ConsumerState<CreateOptionsSection> {
         elevation: 0,
         title: Text(widget.testName, style: AppText.appHeader),
         centerTitle: true,
-        iconTheme: const IconThemeData(color: AppColors.primaryDark),
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const CreateTestPage()),
+          ),
+          icon: const Icon(Icons.arrow_back),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -383,17 +392,6 @@ class _TestSectionState extends ConsumerState<CreateOptionsSection> {
                                               widget.numberOfQuestions - 1) {
                                             // All questions completed
                                             if (mounted) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                    'All questions created!',
-                                                  ),
-                                                  backgroundColor:
-                                                      AppColors.success,
-                                                ),
-                                              );
                                               Navigator.of(
                                                 context,
                                               ).pushReplacement(

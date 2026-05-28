@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flash_card_quiz/pages/role_select_page.dart';
 import 'package:flash_card_quiz/providers/test_info_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,6 +50,7 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
       final questions = querySnapshot.docs.map((doc) {
         return {
           'id': doc.id,
+          'selectedTime': doc.data()['selectedTime'] as String,
           'question': doc.data()['question'] as String,
           'options': List<String>.from(doc.data()['options'] as List),
           'numberOfOptions': doc.data()['numberOfOptions'] as int,
@@ -69,6 +71,52 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _selectTime() async {
+    if (!mounted) return;
+    final currentTime = ref.read(testInfoProvider).editSelectedTime;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: currentTime,
+      initialEntryMode: TimePickerEntryMode.input,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primaryDark,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppColors.primaryDark,
+              secondary: AppColors.primaryDark,
+              onSecondary: Colors.white,
+            ),
+            timePickerTheme: const TimePickerThemeData(
+              backgroundColor: Colors.white,
+              hourMinuteTextColor: AppColors.primaryDark,
+              hourMinuteColor: AppColors.background,
+              dayPeriodTextColor: AppColors.primaryDark,
+              dayPeriodColor: AppColors.background,
+              dayPeriodBorderSide: BorderSide(color: AppColors.primaryDark),
+              dialHandColor: AppColors.primaryDark,
+              dialBackgroundColor: AppColors.background,
+              dialTextColor: AppColors.primaryDark,
+              entryModeIconColor: AppColors.primaryDark,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primaryDark,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && mounted) {
+      ref.read(testInfoProvider.notifier).setSelectedTime(picked);
     }
   }
 
@@ -108,13 +156,17 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
       } else if (_editOptionControllers.length > 4) {
         throw Exception('Maximum 4 options allowed');
       }
+
+      final editSelectedTime = ref.read(testInfoProvider).editSelectedTime;
+
       // Prepare updated data
       final updatedData = {
+        'selectedTime': editSelectedTime.format(context),
         'question': _editQuestionController.text.trim(),
-        'numberOfOptions': _editOptionControllers.length,
         'options': _editOptionControllers
             .map((controller) => controller.text.trim())
             .toList(),
+        'numberOfOptions': _editOptionControllers.length,
       };
 
       // Update in Firestore
@@ -184,19 +236,7 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(height: 20),
-                  // Title
-                  Center(
-                    child: Text(
-                      'Edit Question',
-                      style: AppText.formTitle.copyWith(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
+                  const SizedBox(height: 10),
                   // Question Field
                   const Text('Question', style: AppText.fieldLabel),
                   const SizedBox(height: 8),
@@ -206,7 +246,7 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
                       'Enter the question',
                     ),
                     style: AppText.base.copyWith(fontSize: 15),
-                    maxLines: 3,
+                    maxLines: 2,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter a question';
@@ -214,17 +254,15 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 10),
 
                   // Options Fields
                   const Text('Options', style: AppText.fieldLabel),
                   const SizedBox(height: 8),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _editOptionControllers.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
+                  Column(
+                    children: List.generate(
+                      _editOptionControllers.length,
+                      (index) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: TextFormField(
                           controller: _editOptionControllers[index],
@@ -239,10 +277,61 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
                             return null;
                           },
                         ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Test Time Field
+                  const Text('Test Time', style: AppText.fieldLabel),
+                  const SizedBox(height: 8),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      if (!mounted) return const SizedBox.shrink();
+                      final editSelectedTime = ref.watch(
+                        testInfoProvider.select((v) => v.editSelectedTime),
+                      );
+                      return InkWell(
+                        onTap: _selectTime,
+                        borderRadius: BorderRadius.circular(
+                          AppDecorations.primaryButtonRadius,
+                        ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceLight,
+                            borderRadius: BorderRadius.circular(
+                              AppDecorations.primaryButtonRadius,
+                            ),
+                            border: Border.all(
+                              color: AppColors.primaryDark.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                editSelectedTime.format(context),
+                                style: AppText.base.copyWith(
+                                  fontSize: 15,
+                                  color: AppColors.buttonBackground,
+                                ),
+                              ),
+                              const Icon(
+                                Icons.access_time,
+                                color: AppColors.primaryDark,
+                                size: 24,
+                              ),
+                            ],
+                          ),
+                        ),
                       );
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 10),
 
                   // Update Button
                   SizedBox(
@@ -259,7 +348,7 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
                       child: const Text('Update', style: AppText.submitButton),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -272,6 +361,18 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: AppColors.surfaceLight,
+        elevation: 0,
+        title: const Text('Test Information', style: AppText.appHeader),
+        centerTitle: true,
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const RoleSelectPage()),
+          ),
+          icon: const Icon(Icons.arrow_back),
+        ),
+      ),
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Stack(
@@ -507,15 +608,19 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
                                                           const SizedBox(
                                                             width: 12,
                                                           ),
-                                                          Text(
-                                                            entry.value,
-                                                            style: AppText.base
-                                                                .copyWith(
-                                                                  fontSize: 14,
-                                                                  color: AppColors
-                                                                      .buttonBackground,
-                                                                  height: 1.3,
-                                                                ),
+                                                          Expanded(
+                                                            child: Text(
+                                                              entry.value,
+                                                              style: AppText
+                                                                  .base
+                                                                  .copyWith(
+                                                                    fontSize:
+                                                                        14,
+                                                                    color: AppColors
+                                                                        .buttonBackground,
+                                                                    height: 1.3,
+                                                                  ),
+                                                            ),
                                                           ),
                                                         ],
                                                       ),
