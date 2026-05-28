@@ -18,6 +18,7 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
   final _editFormKey = GlobalKey<FormState>();
   final _editQuestionController = TextEditingController();
   final List<TextEditingController> _editOptionControllers = [];
+  final _editCorrectOptionController = TextEditingController();
 
   @override
   void initState() {
@@ -30,6 +31,7 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
   @override
   void dispose() {
     _editQuestionController.dispose();
+    _editCorrectOptionController.dispose();
     for (var controller in _editOptionControllers) {
       controller.dispose();
     }
@@ -51,9 +53,11 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
         return {
           'id': doc.id,
           'selectedTime': doc.data()['selectedTime'] as String,
+          'selectedEndTime': doc.data()['selectedEndTime'] as String,
           'question': doc.data()['question'] as String,
           'options': List<String>.from(doc.data()['options'] as List),
           'numberOfOptions': doc.data()['numberOfOptions'] as int,
+          'correctOption': doc.data()['correctOption'] as String,
         };
       }).toList();
 
@@ -120,6 +124,52 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
     }
   }
 
+  Future<void> _selectEndTime() async {
+    if (!mounted) return;
+    final currentEndTime = ref.read(testInfoProvider).editSelectedEndTime;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: currentEndTime,
+      initialEntryMode: TimePickerEntryMode.input,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primaryDark,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppColors.primaryDark,
+              secondary: AppColors.primaryDark,
+              onSecondary: Colors.white,
+            ),
+            timePickerTheme: const TimePickerThemeData(
+              backgroundColor: Colors.white,
+              hourMinuteTextColor: AppColors.primaryDark,
+              hourMinuteColor: AppColors.background,
+              dayPeriodTextColor: AppColors.primaryDark,
+              dayPeriodColor: AppColors.background,
+              dayPeriodBorderSide: BorderSide(color: AppColors.primaryDark),
+              dialHandColor: AppColors.primaryDark,
+              dialBackgroundColor: AppColors.background,
+              dialTextColor: AppColors.primaryDark,
+              entryModeIconColor: AppColors.primaryDark,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primaryDark,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && mounted) {
+      ref.read(testInfoProvider.notifier).setSelectedEndTime(picked);
+    }
+  }
+
   Future<void> _deleteQuestion(String documentId) async {
     try {
       if (!mounted) return;
@@ -157,16 +207,23 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
         throw Exception('Maximum 4 options allowed');
       }
 
+      if (!mounted) return;
       final editSelectedTime = ref.read(testInfoProvider).editSelectedTime;
+      if (!mounted) return;
+      final editSelectedEndTime = ref
+          .read(testInfoProvider)
+          .editSelectedEndTime;
 
       // Prepare updated data
       final updatedData = {
         'selectedTime': editSelectedTime.format(context),
+        'selectedEndTime': editSelectedEndTime.format(context),
         'question': _editQuestionController.text.trim(),
         'options': _editOptionControllers
             .map((controller) => controller.text.trim())
             .toList(),
         'numberOfOptions': _editOptionControllers.length,
+        'correctOption': _editCorrectOptionController.text.trim(),
       };
 
       // Update in Firestore
@@ -200,6 +257,9 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
     // Pre-fill question
     _editQuestionController.text = question['question'] as String;
 
+    // Pre-fill correct option
+    _editCorrectOptionController.text = question['correctOption'] as String;
+
     // Pre-fill options
     final options = question['options'] as List<String>;
     for (var option in options) {
@@ -213,7 +273,7 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (bottomSheetContext) => Container(
         height: MediaQuery.of(context).size.height * 0.8,
         decoration: const BoxDecoration(
           color: AppColors.background,
@@ -229,127 +289,246 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
             right: 24,
             top: 24,
           ),
-          child: Form(
-            key: _editFormKey,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 10),
-                  // Question Field
-                  const Text('Question', style: AppText.fieldLabel),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _editQuestionController,
-                    decoration: AppTextFields.textFieldDecoration(
-                      'Enter the question',
+          child: SafeArea(
+            child: Form(
+              key: _editFormKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 10),
+                    // Question Field
+                    const Text('Question', style: AppText.fieldLabel),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _editQuestionController,
+                      decoration: AppTextFields.textFieldDecoration(
+                        'Enter the question',
+                      ),
+                      style: AppText.base.copyWith(fontSize: 15),
+                      maxLines: 2,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a question';
+                        }
+                        return null;
+                      },
                     ),
-                    style: AppText.base.copyWith(fontSize: 15),
-                    maxLines: 2,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a question';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
-                  // Options Fields
-                  const Text('Options', style: AppText.fieldLabel),
-                  const SizedBox(height: 8),
-                  Column(
-                    children: List.generate(
-                      _editOptionControllers.length,
-                      (index) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: TextFormField(
-                          controller: _editOptionControllers[index],
-                          decoration: AppTextFields.textFieldDecoration(
-                            'Option ${index + 1}',
+                    // Options Fields
+                    const Text('Options', style: AppText.fieldLabel),
+                    const SizedBox(height: 8),
+                    Column(
+                      children: List.generate(
+                        _editOptionControllers.length,
+                        (index) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: TextFormField(
+                            controller: _editOptionControllers[index],
+                            decoration: AppTextFields.textFieldDecoration(
+                              'Option ${index + 1}',
+                            ),
+                            style: AppText.base.copyWith(fontSize: 15),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter option ${index + 1}';
+                              }
+                              return null;
+                            },
                           ),
-                          style: AppText.base.copyWith(fontSize: 15),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter option ${index + 1}';
-                            }
-                            return null;
-                          },
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  // Test Time Field
-                  const Text('Test Time', style: AppText.fieldLabel),
-                  const SizedBox(height: 8),
-                  Consumer(
-                    builder: (context, ref, child) {
-                      if (!mounted) return const SizedBox.shrink();
-                      final editSelectedTime = ref.watch(
-                        testInfoProvider.select((v) => v.editSelectedTime),
-                      );
-                      return InkWell(
-                        onTap: _selectTime,
-                        borderRadius: BorderRadius.circular(
-                          AppDecorations.primaryButtonRadius,
-                        ),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceLight,
-                            borderRadius: BorderRadius.circular(
-                              AppDecorations.primaryButtonRadius,
-                            ),
-                            border: Border.all(
-                              color: AppColors.primaryDark.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                editSelectedTime.format(context),
-                                style: AppText.base.copyWith(
-                                  fontSize: 15,
-                                  color: AppColors.buttonBackground,
-                                ),
-                              ),
-                              const Icon(
-                                Icons.access_time,
-                                color: AppColors.primaryDark,
-                                size: 24,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
-                  // Update Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: AppSizes.primaryButtonHeight,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_editFormKey.currentState!.validate()) {
-                          _updateQuestion(documentId);
-                          Navigator.pop(context);
+                    // Correct Option Field
+                    const Text('Correct Option', style: AppText.fieldLabel),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _editCorrectOptionController,
+                      decoration: AppTextFields.textFieldDecoration(
+                        'Enter the correct option',
+                      ),
+                      style: AppText.base.copyWith(fontSize: 15),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter the correct option';
                         }
+                        final enteredOption = value.toLowerCase().trim();
+                        final availableOptions = _editOptionControllers
+                            .map(
+                              (controller) =>
+                                  controller.text.toLowerCase().trim(),
+                            )
+                            .toList();
+
+                        if (!availableOptions.contains(enteredOption)) {
+                          return 'Correct option must match one of the options';
+                        }
+                        return null;
                       },
-                      style: AppButtons.primary,
-                      child: const Text('Update', style: AppText.submitButton),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
+                    const SizedBox(height: 10),
+
+                    // Start Time Field
+                    const Text('Start Time', style: AppText.fieldLabel),
+                    const SizedBox(height: 8),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        if (!mounted) return const SizedBox.shrink();
+                        final editSelectedTime = ref.watch(
+                          testInfoProvider.select((v) => v.editSelectedTime),
+                        );
+                        return InkWell(
+                          onTap: _selectTime,
+                          borderRadius: BorderRadius.circular(
+                            AppDecorations.primaryButtonRadius,
+                          ),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceLight,
+                              borderRadius: BorderRadius.circular(
+                                AppDecorations.primaryButtonRadius,
+                              ),
+                              border: Border.all(
+                                color: AppColors.primaryDark.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  editSelectedTime.format(context),
+                                  style: AppText.base.copyWith(
+                                    fontSize: 15,
+                                    color: AppColors.buttonBackground,
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.access_time,
+                                  color: AppColors.primaryDark,
+                                  size: 24,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 10),
+
+                    // End Time Field
+                    const Text('End Time', style: AppText.fieldLabel),
+                    const SizedBox(height: 8),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        if (!mounted) return const SizedBox.shrink();
+                        final editSelectedEndTime = ref.watch(
+                          testInfoProvider.select((v) => v.editSelectedEndTime),
+                        );
+                        return InkWell(
+                          onTap: _selectEndTime,
+                          borderRadius: BorderRadius.circular(
+                            AppDecorations.primaryButtonRadius,
+                          ),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceLight,
+                              borderRadius: BorderRadius.circular(
+                                AppDecorations.primaryButtonRadius,
+                              ),
+                              border: Border.all(
+                                color: AppColors.primaryDark.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  editSelectedEndTime.format(context),
+                                  style: AppText.base.copyWith(
+                                    fontSize: 15,
+                                    color: AppColors.buttonBackground,
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.access_time,
+                                  color: AppColors.primaryDark,
+                                  size: 24,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Update Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: AppSizes.primaryButtonHeight,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_editFormKey.currentState!.validate()) {
+                            // Validate that end time is greater than start time
+                            final editSelectedTime = ref
+                                .read(testInfoProvider)
+                                .editSelectedTime;
+                            final editSelectedEndTime = ref
+                                .read(testInfoProvider)
+                                .editSelectedEndTime;
+
+                            final startMinutes =
+                                editSelectedTime.hour * 60 +
+                                editSelectedTime.minute;
+                            final endMinutes =
+                                editSelectedEndTime.hour * 60 +
+                                editSelectedEndTime.minute;
+
+                            if (endMinutes <= startMinutes) {
+                              ScaffoldMessenger.of(
+                                Navigator.of(
+                                  context,
+                                  rootNavigator: true,
+                                ).context,
+                              ).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'End time must be greater than start time',
+                                  ),
+                                  backgroundColor: AppColors.error,
+                                ),
+                              );
+                              return;
+                            }
+
+                            _updateQuestion(documentId);
+                            Navigator.pop(bottomSheetContext);
+                          }
+                        },
+                        style: AppButtons.primary,
+                        child: const Text(
+                          'Update',
+                          style: AppText.submitButton,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
               ),
             ),
           ),

@@ -8,6 +8,7 @@ class TestInfoNotifier extends StateNotifier<CreateInfoState> {
           isLoading: false,
           questions: [],
           editSelectedTime: const TimeOfDay(hour: 0, minute: 0),
+          editSelectedEndTime: const TimeOfDay(hour: 0, minute: 0),
         ),
       );
 
@@ -22,28 +23,36 @@ class TestInfoNotifier extends StateNotifier<CreateInfoState> {
   void setSelectedTime(TimeOfDay day) {
     state = state.copyWith(editSelectedTime: day);
   }
+
+  void setSelectedEndTime(TimeOfDay day) {
+    state = state.copyWith(editSelectedEndTime: day);
+  }
 }
 
 class CreateInfoState {
   final bool isLoading;
   final List<Map<String, dynamic>> questions;
   final TimeOfDay editSelectedTime;
+  final TimeOfDay editSelectedEndTime;
 
   CreateInfoState({
     required this.isLoading,
     required this.questions,
     required this.editSelectedTime,
+    required this.editSelectedEndTime,
   });
 
   CreateInfoState copyWith({
     bool? isLoading,
     List<Map<String, dynamic>>? questions,
     TimeOfDay? editSelectedTime,
+    TimeOfDay? editSelectedEndTime,
   }) {
     return CreateInfoState(
       isLoading: isLoading ?? this.isLoading,
       questions: questions ?? this.questions,
       editSelectedTime: editSelectedTime ?? this.editSelectedTime,
+      editSelectedEndTime: editSelectedEndTime ?? this.editSelectedEndTime,
     );
   }
 }

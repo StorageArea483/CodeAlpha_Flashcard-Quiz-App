@@ -11,12 +11,14 @@ class CreateOptionsSection extends ConsumerStatefulWidget {
   final String testName;
   final int numberOfQuestions;
   final TimeOfDay selectedTime;
+  final TimeOfDay selectedEndTime;
 
   const CreateOptionsSection({
     super.key,
     required this.testName,
     required this.numberOfQuestions,
     required this.selectedTime,
+    required this.selectedEndTime,
   });
 
   @override
@@ -28,11 +30,13 @@ class _TestSectionState extends ConsumerState<CreateOptionsSection> {
   final _questionController = TextEditingController();
   final _numberOfOptionsController = TextEditingController();
   final List<TextEditingController> _optionControllers = [];
+  final _correctOptionController = TextEditingController();
 
   @override
   void dispose() {
     _questionController.dispose();
     _numberOfOptionsController.dispose();
+    _correctOptionController.dispose();
     for (var controller in _optionControllers) {
       controller.dispose();
     }
@@ -42,6 +46,7 @@ class _TestSectionState extends ConsumerState<CreateOptionsSection> {
   void _resetForm() {
     _questionController.clear();
     _numberOfOptionsController.clear();
+    _correctOptionController.clear();
     for (var controller in _optionControllers) {
       controller.dispose();
     }
@@ -78,11 +83,13 @@ class _TestSectionState extends ConsumerState<CreateOptionsSection> {
         'id': docId,
         'testName': widget.testName,
         'selectedTime': widget.selectedTime.format(context),
+        'selectedEndTime': widget.selectedEndTime.format(context),
         'question': _questionController.text.trim(),
         'options': _optionControllers
             .map((controller) => controller.text.trim())
             .toList(),
         'numberOfOptions': _optionControllers.length,
+        'correctOption': _correctOptionController.text.trim(),
       };
 
       // Save to Firestore
@@ -358,6 +365,35 @@ class _TestSectionState extends ConsumerState<CreateOptionsSection> {
                                 },
                               ),
                             );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Step 4: Enter Correct Option
+                        const Text('Correct Option', style: AppText.fieldLabel),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _correctOptionController,
+                          decoration: AppTextFields.textFieldDecoration(
+                            'Enter the correct option',
+                          ),
+                          style: AppText.base.copyWith(fontSize: 15),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter the correct option';
+                            }
+                            final enteredOption = value.toLowerCase().trim();
+                            final availableOptions = _optionControllers
+                                .map(
+                                  (controller) =>
+                                      controller.text.toLowerCase().trim(),
+                                )
+                                .toList();
+
+                            if (!availableOptions.contains(enteredOption)) {
+                              return 'Correct option must match one of the options';
+                            }
+                            return null;
                           },
                         ),
                         const SizedBox(height: 16),

@@ -69,6 +69,50 @@ class _CreateTestPageState extends ConsumerState<CreateTestPage> {
     }
   }
 
+  Future<void> _selectEndTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+      initialEntryMode: TimePickerEntryMode.input,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primaryDark,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppColors.primaryDark,
+              secondary: AppColors.primaryDark,
+              onSecondary: Colors.white,
+            ),
+            timePickerTheme: const TimePickerThemeData(
+              backgroundColor: Colors.white,
+              hourMinuteTextColor: AppColors.primaryDark,
+              hourMinuteColor: AppColors.background,
+              dayPeriodTextColor: AppColors.primaryDark,
+              dayPeriodColor: AppColors.background,
+              dayPeriodBorderSide: BorderSide(color: AppColors.primaryDark),
+              dialHandColor: AppColors.primaryDark,
+              dialBackgroundColor: AppColors.background,
+              dialTextColor: AppColors.primaryDark,
+              entryModeIconColor: AppColors.primaryDark,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primaryDark,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && mounted) {
+      ref.read(endTestProvider.notifier).state = picked;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -145,7 +189,7 @@ class _CreateTestPageState extends ConsumerState<CreateTestPage> {
                   const SizedBox(height: 24),
 
                   // Test Time Field
-                  const Text('Test Time', style: AppText.fieldLabel),
+                  const Text('Start Time', style: AppText.fieldLabel),
                   const SizedBox(height: 8),
                   Consumer(
                     builder: (context, ref, child) {
@@ -196,6 +240,60 @@ class _CreateTestPageState extends ConsumerState<CreateTestPage> {
                       );
                     },
                   ),
+                  const SizedBox(height: 24),
+
+                  // End Time Field
+                  const Text('End Time', style: AppText.fieldLabel),
+                  const SizedBox(height: 8),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      if (!mounted) return const SizedBox.shrink();
+                      final selectedEndTime = ref.watch(endTestProvider);
+                      return InkWell(
+                        onTap: _selectEndTime,
+                        borderRadius: BorderRadius.circular(
+                          AppDecorations.primaryButtonRadius,
+                        ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceLight,
+                            borderRadius: BorderRadius.circular(
+                              AppDecorations.primaryButtonRadius,
+                            ),
+                            border: Border.all(
+                              color: AppColors.primaryDark.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                selectedEndTime != null
+                                    ? selectedEndTime.format(context)
+                                    : 'Select test end time',
+                                style: AppText.base.copyWith(
+                                  fontSize: 15,
+                                  color: selectedEndTime != null
+                                      ? AppColors.buttonBackground
+                                      : AppColors.textLight,
+                                ),
+                              ),
+                              const Icon(
+                                Icons.access_time,
+                                color: AppColors.primaryDark,
+                                size: 24,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 40),
 
                   // Proceed Button
@@ -207,15 +305,48 @@ class _CreateTestPageState extends ConsumerState<CreateTestPage> {
                         if (_formKey.currentState!.validate()) {
                           if (!mounted) return;
                           final selectedTime = ref.read(createTestProvider);
+                          if (!mounted) return;
+                          final selectedEndTime = ref.read(endTestProvider);
                           if (selectedTime == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Please select a test time'),
+                                content: Text(
+                                  'Please select a test start time',
+                                ),
                                 backgroundColor: AppColors.error,
                               ),
                             );
                             return;
                           }
+                          if (selectedEndTime == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please select a test end time'),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
+                            return;
+                          }
+
+                          // Validate that end time is greater than start time
+                          final startMinutes =
+                              selectedTime.hour * 60 + selectedTime.minute;
+                          final endMinutes =
+                              selectedEndTime.hour * 60 +
+                              selectedEndTime.minute;
+
+                          if (endMinutes <= startMinutes) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'End time must be greater than start time',
+                                ),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
+                            return;
+                          }
+
                           // Handle proceed action
                           final testName = _testNameController.text.trim();
                           final numberOfQuestions = int.parse(
@@ -228,6 +359,7 @@ class _CreateTestPageState extends ConsumerState<CreateTestPage> {
                                   testName: testName,
                                   numberOfQuestions: numberOfQuestions,
                                   selectedTime: selectedTime,
+                                  selectedEndTime: selectedEndTime,
                                 ),
                               ),
                             );
