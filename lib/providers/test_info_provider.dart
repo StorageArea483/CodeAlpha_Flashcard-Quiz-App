@@ -9,6 +9,9 @@ class TestInfoNotifier extends StateNotifier<CreateInfoState> {
           questions: [],
           editSelectedTime: const TimeOfDay(hour: 0, minute: 0),
           editSelectedEndTime: const TimeOfDay(hour: 0, minute: 0),
+          remainingSeconds: 0,
+          currentCardIndex: 0,
+          showAnswer: false,
         ),
       );
 
@@ -27,6 +30,18 @@ class TestInfoNotifier extends StateNotifier<CreateInfoState> {
   void setSelectedEndTime(TimeOfDay day) {
     state = state.copyWith(editSelectedEndTime: day);
   }
+
+  void setRemainingSeconds(int value) {
+    state = state.copyWith(remainingSeconds: value);
+  }
+
+  void setCurrentCardIndex(int index) {
+    state = state.copyWith(currentCardIndex: index);
+  }
+
+  void setShowAnswer(bool show) {
+    state = state.copyWith(showAnswer: show);
+  }
 }
 
 class CreateInfoState {
@@ -34,12 +49,18 @@ class CreateInfoState {
   final List<Map<String, dynamic>> questions;
   final TimeOfDay editSelectedTime;
   final TimeOfDay editSelectedEndTime;
+  final int remainingSeconds;
+  final int currentCardIndex;
+  final bool showAnswer;
 
   CreateInfoState({
     required this.isLoading,
     required this.questions,
     required this.editSelectedTime,
     required this.editSelectedEndTime,
+    required this.remainingSeconds,
+    required this.currentCardIndex,
+    required this.showAnswer,
   });
 
   CreateInfoState copyWith({
@@ -47,12 +68,18 @@ class CreateInfoState {
     List<Map<String, dynamic>>? questions,
     TimeOfDay? editSelectedTime,
     TimeOfDay? editSelectedEndTime,
+    int? remainingSeconds,
+    int? currentCardIndex,
+    bool? showAnswer,
   }) {
     return CreateInfoState(
       isLoading: isLoading ?? this.isLoading,
       questions: questions ?? this.questions,
       editSelectedTime: editSelectedTime ?? this.editSelectedTime,
       editSelectedEndTime: editSelectedEndTime ?? this.editSelectedEndTime,
+      remainingSeconds: remainingSeconds ?? this.remainingSeconds,
+      currentCardIndex: currentCardIndex ?? this.currentCardIndex,
+      showAnswer: showAnswer ?? this.showAnswer,
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flash_card_quiz/pages/role_select_page.dart';
+import 'package:flash_card_quiz/pages/take_test.dart';
 import 'package:flash_card_quiz/providers/test_info_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -459,217 +460,266 @@ class _TestInfoPageState extends ConsumerState<TestInfoPage> {
                                 ],
                               ),
                             )
-                          : ListView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: questions.length,
-                              itemBuilder: (context, index) {
-                                final question = questions[index];
-                                final options =
-                                    question['options'] as List<String>;
-                                final documentId = question['id'] as String;
+                          : Column(
+                              children: [
+                                ListView.builder(
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: questions.length,
+                                  itemBuilder: (context, index) {
+                                    final question = questions[index];
+                                    final options =
+                                        question['options'] as List<String>;
+                                    final documentId = question['id'] as String;
 
-                                return Consumer(
-                                  builder: (context, ref, child) {
-                                    if (!mounted) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    final isExpanded = ref.watch(
-                                      questionExpandedProvider(index),
-                                    );
+                                    return Consumer(
+                                      builder: (context, ref, child) {
+                                        if (!mounted) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        final isExpanded = ref.watch(
+                                          questionExpandedProvider(index),
+                                        );
 
-                                    return Container(
-                                      margin: const EdgeInsets.only(bottom: 12),
-                                      decoration: SimpleDecoration.card(),
-                                      child: Column(
-                                        children: [
-                                          InkWell(
-                                            onTap: () {
-                                              if (mounted) {
-                                                ref
-                                                        .read(
-                                                          questionExpandedProvider(
-                                                            index,
-                                                          ).notifier,
-                                                        )
-                                                        .state =
-                                                    !isExpanded;
-                                              }
-                                            },
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(16),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Row(
+                                        return Container(
+                                          margin: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
+                                          decoration: SimpleDecoration.card(),
+                                          child: Column(
+                                            children: [
+                                              InkWell(
+                                                onTap: () {
+                                                  if (mounted) {
+                                                    ref
+                                                            .read(
+                                                              questionExpandedProvider(
+                                                                index,
+                                                              ).notifier,
+                                                            )
+                                                            .state =
+                                                        !isExpanded;
+                                                  }
+                                                },
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(
+                                                    16,
+                                                  ),
+                                                  child: Column(
                                                     crossAxisAlignment:
                                                         CrossAxisAlignment
                                                             .start,
                                                     children: [
-                                                      Expanded(
-                                                        child: Text(
-                                                          question['question']
-                                                              as String,
-                                                          style: AppText.base
-                                                              .copyWith(
-                                                                fontSize: 15,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                height: 1.4,
-                                                              ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 12),
-                                                  Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceBetween,
-                                                    children: [
                                                       Row(
-                                                        children: [
-                                                          _buildActionButton(
-                                                            icon: Icons.edit,
-                                                            color: AppColors
-                                                                .primaryDark,
-                                                            onPressed: () {
-                                                              _showEditBottomSheet(
-                                                                question,
-                                                              );
-                                                            },
-                                                          ),
-                                                          const SizedBox(
-                                                            width: 8,
-                                                          ),
-                                                          _buildActionButton(
-                                                            icon: Icons.delete,
-                                                            color:
-                                                                AppColors.error,
-                                                            onPressed: () {
-                                                              _deleteQuestion(
-                                                                documentId,
-                                                              );
-                                                            },
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      Icon(
-                                                        isExpanded
-                                                            ? Icons.expand_less
-                                                            : Icons.expand_more,
-                                                        color: AppColors
-                                                            .primaryDark,
-                                                        size: 28,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          if (isExpanded)
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.fromLTRB(
-                                                    16,
-                                                    0,
-                                                    16,
-                                                    16,
-                                                  ),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  const SizedBox(height: 12),
-                                                  ...options.asMap().entries.map((
-                                                    entry,
-                                                  ) {
-                                                    return Container(
-                                                      margin:
-                                                          const EdgeInsets.only(
-                                                            bottom: 8,
-                                                          ),
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                            12,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: AppColors
-                                                            .surfaceLight,
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
-                                                            ),
-                                                        border: Border.all(
-                                                          color: AppColors
-                                                              .primaryDark
-                                                              .withOpacity(0.2),
-                                                        ),
-                                                      ),
-                                                      child: Row(
                                                         crossAxisAlignment:
                                                             CrossAxisAlignment
                                                                 .start,
                                                         children: [
-                                                          Container(
-                                                            width: 24,
-                                                            height: 24,
-                                                            decoration:
-                                                                const BoxDecoration(
-                                                                  color: AppColors
-                                                                      .primaryDark,
-                                                                  shape: BoxShape
-                                                                      .circle,
-                                                                ),
-                                                            child: Center(
-                                                              child: Text(
-                                                                '${entry.key + 1}',
-                                                                style: AppText.base.copyWith(
-                                                                  fontSize: 12,
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          const SizedBox(
-                                                            width: 12,
-                                                          ),
                                                           Expanded(
                                                             child: Text(
-                                                              entry.value,
+                                                              question['question']
+                                                                  as String,
                                                               style: AppText
                                                                   .base
                                                                   .copyWith(
                                                                     fontSize:
-                                                                        14,
-                                                                    color: AppColors
-                                                                        .buttonBackground,
-                                                                    height: 1.3,
+                                                                        15,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                    height: 1.4,
                                                                   ),
                                                             ),
                                                           ),
                                                         ],
                                                       ),
-                                                    );
-                                                  }),
-                                                ],
+                                                      const SizedBox(
+                                                        height: 12,
+                                                      ),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          Row(
+                                                            children: [
+                                                              _buildActionButton(
+                                                                icon:
+                                                                    Icons.edit,
+                                                                color: AppColors
+                                                                    .primaryDark,
+                                                                onPressed: () {
+                                                                  _showEditBottomSheet(
+                                                                    question,
+                                                                  );
+                                                                },
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 8,
+                                                              ),
+                                                              _buildActionButton(
+                                                                icon: Icons
+                                                                    .delete,
+                                                                color: AppColors
+                                                                    .error,
+                                                                onPressed: () {
+                                                                  _deleteQuestion(
+                                                                    documentId,
+                                                                  );
+                                                                },
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          Icon(
+                                                            isExpanded
+                                                                ? Icons
+                                                                      .expand_less
+                                                                : Icons
+                                                                      .expand_more,
+                                                            color: AppColors
+                                                                .primaryDark,
+                                                            size: 28,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                        ],
-                                      ),
+                                              if (isExpanded)
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.fromLTRB(
+                                                        16,
+                                                        0,
+                                                        16,
+                                                        16,
+                                                      ),
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      const SizedBox(
+                                                        height: 12,
+                                                      ),
+                                                      ...options.asMap().entries.map((
+                                                        entry,
+                                                      ) {
+                                                        return Container(
+                                                          margin:
+                                                              const EdgeInsets.only(
+                                                                bottom: 8,
+                                                              ),
+                                                          padding:
+                                                              const EdgeInsets.all(
+                                                                12,
+                                                              ),
+                                                          decoration: BoxDecoration(
+                                                            color: AppColors
+                                                                .surfaceLight,
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
+                                                                ),
+                                                            border: Border.all(
+                                                              color: AppColors
+                                                                  .primaryDark
+                                                                  .withOpacity(
+                                                                    0.2,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                          child: Row(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Container(
+                                                                width: 24,
+                                                                height: 24,
+                                                                decoration: const BoxDecoration(
+                                                                  color: AppColors
+                                                                      .primaryDark,
+                                                                  shape: BoxShape
+                                                                      .circle,
+                                                                ),
+                                                                child: Center(
+                                                                  child: Text(
+                                                                    '${entry.key + 1}',
+                                                                    style: AppText.base.copyWith(
+                                                                      fontSize:
+                                                                          12,
+                                                                      color: Colors
+                                                                          .white,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 12,
+                                                              ),
+                                                              Expanded(
+                                                                child: Text(
+                                                                  entry.value,
+                                                                  style: AppText
+                                                                      .base
+                                                                      .copyWith(
+                                                                        fontSize:
+                                                                            14,
+                                                                        color: AppColors
+                                                                            .buttonBackground,
+                                                                        height:
+                                                                            1.3,
+                                                                      ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        );
+                                                      }),
+                                                    ],
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        );
+                                      },
                                     );
                                   },
-                                );
-                              },
+                                ),
+
+                                const SizedBox(height: 20),
+
+                                // Create Test Button
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: AppSizes.primaryButtonHeight,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      // Navigate to create test page
+                                      if (context.mounted) {
+                                        Navigator.of(context).pushReplacement(
+                                          MaterialPageRoute(
+                                            builder: (context) => TakeTest(
+                                              testName: widget.testName,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    style: AppButtons.primary,
+                                    child: const Text(
+                                      'Create Test',
+                                      style: AppText.submitButton,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                     );
                   },
